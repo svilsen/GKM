@@ -1,0 +1,15 @@
+Package: GKM
+Type: Package
+Title: Greedy K-means Clustering
+Description: Implements greedy re-allocation for K-means clustering.
+Version: 0.1
+Date: 2026-06-24
+Authors@R: person(given = c("Søren", "B."), family = "Vilsen", role = c("aut", "cre"), email = "svilsen@mp.aau.dk") 
+License: MIT + file LICENSE
+Imports: 
+    Rcpp (>= 1.0.14)
+LinkingTo: 
+    Rcpp, 
+    RcppArmadillo
+Encoding: UTF-8
+Config/roxygen2/version: 8.0.0
