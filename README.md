@@ -63,6 +63,8 @@ km_clst <- greedy_cluster(
 )
 ```
 
+<img width="2398" height="859" alt="g1" src="https://github.com/user-attachments/assets/bb170cf0-bfa5-4f9c-ba8f-c9cb62cc8455" />
+
 ## Contributing
 Contributions are welcome! Please feel free to submit issues or pull requests on the [GitHub repository](https://github.com/svilsen/GKM).
 
