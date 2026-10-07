@@ -38,18 +38,6 @@ x <- iris[, 3:4] |> as.matrix()
 cl <- iris[, 5]
 k <- length(unigue(cl))
 
-# Run greedy K-means clustering
-grd_clst <- greedy_cluster(
-    x, 
-    k = 3, 
-    control = list(
-        neighbours = 1L, 
-        rng_start = FALSE, 
-        greedy = 2L, 
-        seed = 123456
-    )
-)
-
 # Run standard K-means clustering
 km_clst <- greedy_cluster(
     x, 
@@ -58,6 +46,18 @@ km_clst <- greedy_cluster(
         rng_start = FALSE, 
         greedy = 1L, 
         competitive = FALSE,
+        seed = 123456
+    )
+)
+
+# Run greedy K-means clustering
+grd_clst <- greedy_cluster(
+    x, 
+    k = 3, 
+    control = list(
+        neighbours = 1L, 
+        rng_start = FALSE, 
+        greedy = 2L, 
         seed = 123456
     )
 )
