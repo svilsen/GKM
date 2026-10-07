@@ -11,18 +11,63 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// is_connected_matrix_directed
+bool is_connected_matrix_directed(const arma::mat& adj_matrix);
+RcppExport SEXP _GKM_is_connected_matrix_directed(SEXP adj_matrixSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type adj_matrix(adj_matrixSEXP);
+    rcpp_result_gen = Rcpp::wrap(is_connected_matrix_directed(adj_matrix));
+    return rcpp_result_gen;
+END_RCPP
+}
+// create_adjacency_list_regular
+std::vector<std::vector<int>> create_adjacency_list_regular(const int& k, const int& neighbours);
+RcppExport SEXP _GKM_create_adjacency_list_regular(SEXP kSEXP, SEXP neighboursSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const int& >::type k(kSEXP);
+    Rcpp::traits::input_parameter< const int& >::type neighbours(neighboursSEXP);
+    rcpp_result_gen = Rcpp::wrap(create_adjacency_list_regular(k, neighbours));
+    return rcpp_result_gen;
+END_RCPP
+}
+// create_adjacency_list_grid
+std::vector<std::vector<int>> create_adjacency_list_grid(const std::vector<int>& k);
+RcppExport SEXP _GKM_create_adjacency_list_grid(SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<int>& >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(create_adjacency_list_grid(k));
+    return rcpp_result_gen;
+END_RCPP
+}
+// neighbourhood_reconstruction
+arma::mat neighbourhood_reconstruction(const std::vector<std::vector<int>>& neighbourhood, const int& k);
+RcppExport SEXP _GKM_neighbourhood_reconstruction(SEXP neighbourhoodSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::vector<std::vector<int>>& >::type neighbourhood(neighbourhoodSEXP);
+    Rcpp::traits::input_parameter< const int& >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(neighbourhood_reconstruction(neighbourhood, k));
+    return rcpp_result_gen;
+END_RCPP
+}
 // greedy_cluster_cpp
-Rcpp::List greedy_cluster_cpp(const arma::mat& x, const int& k, const int& nd, const bool& rngstart, const bool& greedy, const int& greedy_reset, const bool& greedy_end, const bool& competitive, const int& competitive_release, const arma::vec& lrange, const double& tol, const arma::vec& maxiter, const int& seed, const int& trace);
-RcppExport SEXP _GKM_greedy_cluster_cpp(SEXP xSEXP, SEXP kSEXP, SEXP ndSEXP, SEXP rngstartSEXP, SEXP greedySEXP, SEXP greedy_resetSEXP, SEXP greedy_endSEXP, SEXP competitiveSEXP, SEXP competitive_releaseSEXP, SEXP lrangeSEXP, SEXP tolSEXP, SEXP maxiterSEXP, SEXP seedSEXP, SEXP traceSEXP) {
+Rcpp::List greedy_cluster_cpp(const arma::mat& x, const int& k, const std::vector<std::vector<int>>& neighbourhood, const bool& rng_start, const int& greedy, const bool& greedy_end, const bool& competitive, const int& competitive_release, const arma::vec& lrange, const double& tol, const arma::vec& maxiter, const int& seed, const int& trace);
+RcppExport SEXP _GKM_greedy_cluster_cpp(SEXP xSEXP, SEXP kSEXP, SEXP neighbourhoodSEXP, SEXP rng_startSEXP, SEXP greedySEXP, SEXP greedy_endSEXP, SEXP competitiveSEXP, SEXP competitive_releaseSEXP, SEXP lrangeSEXP, SEXP tolSEXP, SEXP maxiterSEXP, SEXP seedSEXP, SEXP traceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
     Rcpp::traits::input_parameter< const int& >::type k(kSEXP);
-    Rcpp::traits::input_parameter< const int& >::type nd(ndSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type rngstart(rngstartSEXP);
-    Rcpp::traits::input_parameter< const bool& >::type greedy(greedySEXP);
-    Rcpp::traits::input_parameter< const int& >::type greedy_reset(greedy_resetSEXP);
+    Rcpp::traits::input_parameter< const std::vector<std::vector<int>>& >::type neighbourhood(neighbourhoodSEXP);
+    Rcpp::traits::input_parameter< const bool& >::type rng_start(rng_startSEXP);
+    Rcpp::traits::input_parameter< const int& >::type greedy(greedySEXP);
     Rcpp::traits::input_parameter< const bool& >::type greedy_end(greedy_endSEXP);
     Rcpp::traits::input_parameter< const bool& >::type competitive(competitiveSEXP);
     Rcpp::traits::input_parameter< const int& >::type competitive_release(competitive_releaseSEXP);
@@ -31,7 +76,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::vec& >::type maxiter(maxiterSEXP);
     Rcpp::traits::input_parameter< const int& >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< const int& >::type trace(traceSEXP);
-    rcpp_result_gen = Rcpp::wrap(greedy_cluster_cpp(x, k, nd, rngstart, greedy, greedy_reset, greedy_end, competitive, competitive_release, lrange, tol, maxiter, seed, trace));
+    rcpp_result_gen = Rcpp::wrap(greedy_cluster_cpp(x, k, neighbourhood, rng_start, greedy, greedy_end, competitive, competitive_release, lrange, tol, maxiter, seed, trace));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -51,7 +96,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_GKM_greedy_cluster_cpp", (DL_FUNC) &_GKM_greedy_cluster_cpp, 14},
+    {"_GKM_is_connected_matrix_directed", (DL_FUNC) &_GKM_is_connected_matrix_directed, 1},
+    {"_GKM_create_adjacency_list_regular", (DL_FUNC) &_GKM_create_adjacency_list_regular, 2},
+    {"_GKM_create_adjacency_list_grid", (DL_FUNC) &_GKM_create_adjacency_list_grid, 1},
+    {"_GKM_neighbourhood_reconstruction", (DL_FUNC) &_GKM_neighbourhood_reconstruction, 2},
+    {"_GKM_greedy_cluster_cpp", (DL_FUNC) &_GKM_greedy_cluster_cpp, 13},
     {"_GKM_predict_cluster_cpp", (DL_FUNC) &_GKM_predict_cluster_cpp, 4},
     {NULL, NULL, 0}
 };

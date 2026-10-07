@@ -1,34 +1,14 @@
-neighbourhood_kernel_reconstruction <- function(neighbourhood, kernel, k) {
-    ##
-    neighbourhood_matrix <- matrix(0, nrow = k, ncol = k)
-    kernel_matrix <- matrix(NA, nrow = k, ncol = k)
-
-    ##
-    for (i in seq_len(k)) {
-        ##
-        neighbourhood_i <- neighbourhood[[i]] + 1
-        kernel_i <- kernel[[i]]
-
-        ##
-        for (j in seq_along(neighbourhood_i)) {
-            neighbourhood_matrix[i, neighbourhood_i[j]] <- 1
-            kernel_matrix[i, neighbourhood_i[j]] <- kernel_i[j]
-        }
-
-    }
-
-    return(list(neighbourhood = neighbourhood_matrix, kernel = kernel_matrix))
-}
-
+##
 #' @title Control arguments for the \link{greedy_cluster} function
 #'
 #' @description Creates a list of default control arguments used by the \link{greedysom} function.
 #'
-#' @param nd Integer: The maximum distance, measured along the grid, for two clusters to be considered neighbours.
-#' @param rngstart Boolean: Should the clusters be initialised entirely at random, or using kmeans++?
-#' @param greedy Boolean: Should the assignment be made greedily using the neighbourhood structure?
-#' @param greedy_reset Integer: The number of iterations between non-greedy allocations (only used if \code{greedy == TRUE}).
-#' @param greedy_end Boolean: Should the final allocation be made greedily?
+#' @param neighbours Integer: The number of neighbours of each cluster.
+#' @param neighbours_type String: The type of adjacency matrix constructed from \code{neighbours}.
+#' @param neighbours_connected Boolean: Should the neighbourhood graph be connected?
+#' @param rng_start Boolean: Should the clusters be initialised entirely at random, or using kmeans++?
+#' @param greedy Integer: The number of iterations using best-match allocation before switching to greedy allocation.
+#' @param greedy_end Boolean: Should the final allocation be greedy?
 #' @param competitive Boolean: Should the clusters be allowed to compete during the training process?
 #' @param competitive_release Integer: The number of iterations before competitive learning is stopped (only used if \code{competitive == TRUE}).
 #' @param batch Boolean: Should the batch version of the algorithm be used?
@@ -37,6 +17,7 @@ neighbourhood_kernel_reconstruction <- function(neighbourhood, kernel, k) {
 #' @param learning_range Numeric vector: A triple (start learning range, end learning range, number iterations to go from start to end range).
 #' @param tolerance Numeric: A tolerance on the absolute change in centres between iterations; used for early stopping.
 #' @param seed Numeric: A seed passed to c++.
+#' @param include_data Boolean: Should the data be included in the return object?
 #' @param trace Integer: Prints tracing information on the progress of the algorithm every \code{trace} number of iterations.
 #'
 #' @details The argument \code{competitive_release} is technically not necessary as it can be controlled by setting an extremely small learning range. However, when the learning range is low (to the point where the optimisation is not competitive) the performance computational complexity of the algorithm can be improved by not accounting for neighbours.
@@ -44,37 +25,56 @@ neighbourhood_kernel_reconstruction <- function(neighbourhood, kernel, k) {
 #' @return A list of control arguments.
 #' @export
 control_greedy_cluster <- function(
-        nd = 2L,
-        rngstart = FALSE,
-        greedy = TRUE,
-        greedy_reset = 10,
+        neighbours = 2L,
+        neighbours_type = "regular",
+        neighbours_connected = TRUE,
+        rng_start = FALSE,
+        greedy = 3L,
         greedy_end = FALSE,
-        competitive = FALSE,
-        competitive_release = NULL,
-        max_iteration = c(100, 10),
-        learning_range = c(1.0, 0.1, 5),
+        competitive = TRUE,
+        competitive_release = 5,
+        max_iteration = c(100, 2),
+        learning_range = c(1.0, 0.1, 3),
         seed = sample(1e6, 1),
         tolerance = (.Machine$double.eps)^(1/4),
+        include_data = TRUE,
         trace = 0L
 ) {
     ##
-    if (!is.infinite(nd)) {
-        if (!is.numeric(nd)) {
-            stop("'nd' has to be an integer (or at least numeric).")
+    if (!is.infinite(neighbours)) {
+        if (!is.numeric(neighbours)) {
+            stop("'neighbours' has to be an integer.")
         }
         else {
-            nd <- as.integer(nd)
+            neighbours <- as.integer(neighbours)
         }
     }
 
-    ##
-    if (!is.logical(rngstart)) {
-        stop("'rngstart' has to be logical.")
+    if (!(is.character(neighbours_type) & (neighbours_type %in% c("regular", "grid", "hexgrid")))) {
+        stop("'neighbours_type' has to be string taken the one of the following values: 'regular', 'grid', or 'hexgrid'.")
     }
 
     ##
-    if (!is.logical(greedy)) {
-        stop("'greedy' has to be logical.")
+    if (!is.logical(neighbours_connected)) {
+        stop("'neighbours_connected' has to be logical.")
+    }
+
+    ##
+    if (!is.logical(rng_start)) {
+        stop("'rng_start' has to be logical.")
+    }
+
+    ##
+    if (is.null(greedy)) {
+        greedy <- 3
+    }
+
+    if (!is.numeric(greedy)) {
+        stop("'greedy' has to be numeric.")
+    }
+
+    if (greedy < 0) {
+        stop("'greedy' has to be >= 0.")
     }
 
     ##
@@ -96,15 +96,6 @@ control_greedy_cluster <- function(
     }
 
     ##
-    if (is.null(greedy_reset)) {
-        greedy_reset <- max_iteration[1] + 1
-    }
-
-    if (!is.numeric(greedy_reset)) {
-        stop("'greedy_reset' has to be numeric.")
-    }
-
-    ##
     if (!is.vector(learning_range)) {
         learning_range <- as.vector(learning_range)
     }
@@ -119,7 +110,7 @@ control_greedy_cluster <- function(
 
     ##
     if (is.null(competitive_release)) {
-        competitive_release <- 2L * learning_range[3]
+        competitive_release <- greedy
     }
 
     if (!is.numeric(competitive_release)) {
@@ -129,6 +120,15 @@ control_greedy_cluster <- function(
     ##
     if (!is.numeric(tolerance)) {
         stop("'tolerance' has to be numeric.")
+    }
+
+    ##
+    if (is.null(include_data)) {
+        include_data <- FALSE
+    }
+
+    if (!is.logical(include_data)) {
+        stop("'include_data' has to be logical.")
     }
 
     ##
@@ -144,22 +144,34 @@ control_greedy_cluster <- function(
     ##
     return(
         list(
-            nd = nd, rngstart = rngstart,
-            greedy = greedy, greedy_reset = greedy_reset, greedy_end = greedy_end,
-            competitive = competitive, competitive_release = competitive_release,
-            max_iteration = max_iteration, learning_range = learning_range,
-            tolerance = tolerance, seed = seed, trace = trace
+            neighbours = neighbours,
+            neighbours_type = neighbours_type,
+            rng_start = rng_start,
+            greedy = greedy,
+            greedy_end = greedy_end,
+            competitive = competitive,
+            competitive_release = competitive_release,
+            max_iteration = max_iteration,
+            learning_range = learning_range,
+            tolerance = tolerance,
+            seed = seed,
+            include_data = include_data,
+            trace = trace
         )
     )
 }
 
+##
 #' @title Greedy K-means Clustering
 #'
 #' @description Regularised K-means clustering, allowing for greedy re-allocation of data-points when updating clusters, by exploiting the pre-defined neighbourhood structure.
 #'
 #' @param x Numeric matrix: A matrix with rows and columns corresponding to observations and features, respectively. NB: if \code{x} is not a matrix, the function will try to cast it as a matrix.
-#' @param k Integer: The number of clusters.
+#' @param k Integer, integer vector, or adjacency list: The number of clusters, the grid layout, or the adjacency matrix of the clusters, respectively.
 #' @param control List: A list of control arguments, for more details see \link{control_greedy_cluster}.
+#'
+#' @details
+#' If the argument \code{k} is given as an adjacency list, then the elements will be taken as the number of clusters and the argument \code{neighbours}, set in the control-object, will be ignored.
 #'
 #' @return An object of class \link{cluster}.
 #' @export
@@ -181,9 +193,39 @@ greedy_cluster <- function(x, k, control = list()) {
         stop("'x' contains values which are 'NA', 'NaN', or 'Inf'.")
     }
 
+    ##
+    #
+    if (!(is.numeric(k) || is.list(k))) {
+        stop("'k' should be either an integer or an adjacency list")
+    }
+    else if (is.numeric(k)) {
+        k <- as.integer(k)
+    }
+
     #
     if (!is.integer(k)) {
-        k <- as.integer(k)
+        #
+        if (!is_adjacency_list(k)) {
+            stop("'k' should be either an adjacency list.")
+        }
+
+        #
+        if (control[["neighbours_connected"]]) {
+            if (!is_connected_matrix(neighbours)) {
+                stop("The adjacency graph should be connected; if not set 'neighbours_connected == FALSE' in control list.")
+            }
+        }
+
+        #
+        neighbours <- lapply(seq_len(length(k)), \(x) which(k[x,] > 0) - 1)
+        k <- as.integer(length(k))
+    }
+    else {
+        neighbours <- create_adjacency_list(k, control[["neighbours"]], control[["neighbours_type"]])
+
+        if (length(k) > 1) {
+            k <- prod(k)
+        }
     }
 
     ##
@@ -191,13 +233,12 @@ greedy_cluster <- function(x, k, control = list()) {
     res <- greedy_cluster_cpp(
         x = x,
         k = k,
-        nd = control[["nd"]],
-        rngstart = control[["rngstart"]],
+        neighbourhood = neighbours,
+        rng_start = control[["rng_start"]],
         greedy = control[["greedy"]],
-        greedyreset = control[["greedy_reset"]],
-        greedyend = control[["greedy_end"]],
+        greedy_end = control[["greedy_end"]],
         competitive = control[["competitive"]],
-        competitiverelease = control[["competitive_release"]],
+        competitive_release = control[["competitive_release"]],
         lrange = control[["learning_range"]],
         tol = control[["tolerance"]],
         maxiter = control[["max_iteration"]],
@@ -205,19 +246,13 @@ greedy_cluster <- function(x, k, control = list()) {
         trace = control[["trace"]]
     )
 
-    # Change from sparse to complete matrix
-    res[c("neighbourhood", "kernel")] <- neighbourhood_kernel_reconstruction(
-        neighbourhood = res[["neighbourhood"]],
-        kernel = res[["kernel"]],
-        k = res[["k"]]
-    )
-
     # Change from C++ to R indices.
+    res[["neighbourhood"]] <- lapply(neighbours, \(x) x + 1)
     res[["previous"]] <- res[["previous"]] + 1
 
     #
-    if (control$data) {
-        res["data"] <- x
+    if (control$include_data) {
+        res[["data"]] <- x
     }
 
     ##
@@ -229,6 +264,17 @@ greedy_cluster <- function(x, k, control = list()) {
 }
 
 
+#' @title Cluster predictions
+#'
+#' @description The allocations predicted by the \link{cluster} object.
+#'
+#' @param object An object of class \link{cluster}.
+#' @param ... Additional arguments.
+#'
+#' @details A
+#'
+#' @return A matrix of allocated clusters.
+#'
 #' @rdname predict
 #' @method predict cluster
 #' @export
@@ -248,18 +294,18 @@ predict.cluster <- function(object, ...) {
     #
     if (is.null(dots[["reasign"]])) {
         if (is.null(dots[["newdata"]])) {
-            reassign <- FALSE
+            reasign <- FALSE
         }
         else {
-            reassign <- TRUE
+            reasign <- TRUE
         }
     }
     else {
-        reassign <- dots[["reassign"]]
+        reasign <- dots[["reasign"]]
     }
 
-    if (!is.logical(reassign)) {
-        reassign <- as.logical(reassign)
+    if (!is.logical(reasign)) {
+        reasign <- as.logical(reasign)
     }
 
     ##

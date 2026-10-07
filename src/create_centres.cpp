@@ -9,9 +9,13 @@
 // Completely random centre allocation
 arma::mat create_random_centres(const arma::mat & x, const int & k, const int & d, const int & seed) {
     //
+    const int & M = x.n_rows;
+
+    //
     std::mt19937 rng(seed);
-    std::uniform_int_distribution<int> random_index(0, k - 1);
+    std::uniform_int_distribution<int> random_index(0, M - 1);
     std::unordered_set<int> used_elements;
+
     //
     arma::mat _centres(k, d);
     for (int i = 0; i < k; i++) {
@@ -49,7 +53,6 @@ void update_x_distance(arma::vec & accumulated_distance, const arma::vec & centr
         }
     }
 }
-
 
 int update_index(const double & u, const arma::vec & accumulated_distance) {
     //

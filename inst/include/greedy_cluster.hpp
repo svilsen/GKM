@@ -11,14 +11,13 @@ public:
     int k;
 
     //
-    int nd;
+    int neighbours;
 
     //
-    bool rngstart;
+    bool rng_start;
 
     //
-    bool greedy;
-    int greedy_reset;
+    int greedy;
     bool greedy_end;
 
     bool competitive;
@@ -29,7 +28,6 @@ public:
     int iterations;
 
     //
-    std::vector<std::vector<double>> kernel;
     std::vector<std::vector<int>> neighbourhood;
 
     //
@@ -42,39 +40,42 @@ public:
     //// Functions
     // Constructor(s)
     GreedyCluster(
-        const int & _d, const int & _k, const int & _nd, const bool & _rngstart,
-        const bool & _greedy, const int & _greedy_reset, const bool & _greedy_end,
-        const bool & _competitive, const int & _competitive_release,
+        const int & _d,
+        const int & _k,
+        const std::vector<std::vector<int>> & _neighbourhood,
+        const bool & _rng_start,
+        const int & _greedy,
+        const bool & _greedy_end,
+        const bool & _competitive,
+        const int & _competitive_release,
         const arma::colvec & _lrange
     );
 
     //// Initialisers
-    // Neighbourhood, kernel, and index-order
-    void initialise_neighbourhood();
-
-    // Clusters
+    // Data
     void find_minmax(arma::mat & _minmax, const arma::mat & x);
     void standardise_data(arma::mat & _z, const arma::mat & x);
-    arma::mat unstandardise_centres();
+    void unstandardise_centres(arma::mat & _centres);
 
-    void initialise_clusters(const arma::mat & x, const int & seed);
+    // Clusters
+    void reorder_clusters(arma::mat & _centres);
+    void initialise_clusters(arma::mat & z, const arma::mat & x, const int & seed, const int & maxiter);
 
     //// Update clusters
     // Update learning rate and range
-    double update_lrange(const int & n);
+    double update_lrange(const int & n, const int & s);
 
     // Clusters
-    void update_centres_batch(arma::mat & _kernel_val_sum, arma::vec & _kernel_sum, const arma::vec & v, const int & idx, const int & n);
-    void update_clusters_batch(const arma::mat & x, const double & tol, const arma::vec & maxiter, const int & trace);
+    void update_centres(arma::mat & _kernel_val_sum, arma::vec & _kernel_sum, const arma::vec & v, const int & idx, const int & n);
+    void update_clusters(const arma::mat & z, const double & tol, const arma::vec & maxiter, const int & trace);
 };
 
 Rcpp::List greedy_cluster_cpp(
         const arma::mat & x,
         const int & k,
-        const int & nd,
-        const bool & rngstart,
-        const bool & greedy,
-        const int & greedy_reset,
+        const std::vector<std::vector<int>> & neighbourhood,
+        const bool & rng_start,
+        const int & greedy,
         const bool & greedy_end,
         const bool & competitive,
         const int & competitive_release,

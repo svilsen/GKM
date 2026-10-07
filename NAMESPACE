@@ -3,5 +3,6 @@
 S3method(predict,cluster)
 export(control_greedy_cluster)
 export(greedy_cluster)
+export(neighbourhood_matrix)
 importFrom(Rcpp,evalCpp)
 useDynLib(GKM)

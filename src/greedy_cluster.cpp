@@ -11,55 +11,16 @@
 GreedyCluster::GreedyCluster(
     const int & _d,
     const int & _k,
-    const int & _nd,
-    const bool & _rngstart,
-    const bool & _greedy,
-    const int & _greedy_reset,
+    const std::vector<std::vector<int>> & _neighbourhood,
+    const bool & _rng_start,
+    const int & _greedy,
     const bool & _greedy_end,
     const bool & _competitive,
     const int & _competitive_release,
     const arma::vec & _lrange
-) : d(_d), k(_k), nd(_nd), rngstart(_rngstart), greedy(_greedy), greedy_reset(_greedy_reset), greedy_end(_greedy_end), competitive(_competitive), competitive_release(_competitive_release), lrange(_lrange) {
-    //
-    neighbourhood = std::vector<std::vector<int>>(k);
-    kernel = std::vector<std::vector<double>>(k);
-}
+) : d(_d), k(_k), neighbourhood(_neighbourhood), rng_start(_rng_start), greedy(_greedy), greedy_end(_greedy_end), competitive(_competitive), competitive_release(_competitive_release), lrange(_lrange) { }
 
 //// Initialisation
-// Neighbourhood and kernel
-void GreedyCluster::initialise_neighbourhood() {
-    //
-    arma::mat distances = arma::zeros(k, k);
-    for (int i = 0; i < k; i++) {
-        //
-        if (i < k - 1) {
-            for (int j = i + 1; j < k; j++) {
-                if (j != i) {
-                    double distance_ij = euclidian_distance(centres.row(i).as_col(), centres.row(j).as_col(), d);
-                    distances(i, j) = distance_ij;
-                    distances(j, i) = distance_ij;
-                }
-            }
-        }
-
-        //
-        arma::uvec sorted_distance_i = arma::sort_index(distances.row(i));
-
-        //
-        std::vector<int> neighbourhood_i(nd, 0);
-        std::vector<double> kernel_i(nd, HUGE_VAL);
-        for (int j = 0; j < nd; j++) {
-            neighbourhood_i[j] = sorted_distance_i[j + 1];
-            kernel_i[j] = 1.0;
-        }
-
-        //
-        neighbourhood[i] = neighbourhood_i;
-        kernel[i] = kernel_i;
-    }
-
-}
-
 // Clusters
 void GreedyCluster::find_minmax(arma::mat & _minmax, const arma::mat & x) {
     //
@@ -80,6 +41,7 @@ void GreedyCluster::find_minmax(arma::mat & _minmax, const arma::mat & x) {
     }
 }
 
+//
 void GreedyCluster::standardise_data(arma::mat & _z, const arma::mat & x) {
     //
     const int & M = x.n_rows;
@@ -92,56 +54,119 @@ void GreedyCluster::standardise_data(arma::mat & _z, const arma::mat & x) {
     }
 }
 
-arma::mat GreedyCluster::unstandardise_centres() {
+//
+void GreedyCluster::unstandardise_centres(arma::mat & _centres) {
     //
-    arma::mat _centres(k, d);
     for (int i = 0; i < k; i++) {
         for (int j = 0; j < d; j++) {
-            _centres(i, j) = centres(i, j) * (minmax(1, j) - minmax(0, j)) + minmax(0, j);
+            _centres(i, j) = _centres(i, j) * (minmax(1, j) - minmax(0, j)) + minmax(0, j);
+        }
+    }
+}
+
+//
+void GreedyCluster::reorder_clusters(arma::mat & _centres) {
+    //
+    arma::mat centres_ordered = arma::mat(k, d);
+    std::vector<bool> centres_assigned(k, false);
+    std::vector<bool> neighbour_assigned(k, false);
+
+    //
+    int idx = 0;
+    int degree_max = neighbourhood[0].size();
+    for (int i = 1; i < k; i++) {
+        if (neighbourhood[i].size() > degree_max) {
+            idx = i;
+            degree_max = neighbourhood[i].size();
         }
     }
 
-    return _centres;
+    centres_ordered.row(idx) = _centres.row(0);
+    centres_assigned[0] = true;
+    neighbour_assigned[idx] = true;
+
+    //
+    for (int h = 1; h < k; h++) {
+        //
+        double score_min = HUGE_VAL;
+        int idx_best = -1;
+        int neighbour_best = -1;
+
+        //
+        for (int i = 0; i < k; i++) {
+            if (neighbour_assigned[i]) {
+                continue;
+            }
+
+            for (int j = 0; j < k; j++) {
+                if (centres_assigned[j]) {
+                    continue;
+                }
+
+                double score = 0.0;
+                for (int n : neighbourhood[j]) {
+                    if (neighbour_assigned[n]) {
+                        score += euclidian_distance(_centres.row(j).as_col(), centres_ordered.row(n).as_col(), d);
+                    }
+                }
+
+                if (score < score_min) {
+                    score_min = score;
+                    idx_best = j;
+                    neighbour_best = i;
+                }
+            }
+        }
+
+        if ((neighbour_best > 0) && (idx_best > 0)) {
+            centres_ordered.row(neighbour_best) = _centres.row(idx_best);
+            centres_assigned[idx_best] = true;
+            neighbour_assigned[neighbour_best] = true;
+        }
+    }
+
+    _centres = centres_ordered;
 }
 
-void GreedyCluster::initialise_clusters(const arma::mat & x, const int & seed) {
+//
+void GreedyCluster::initialise_clusters(arma::mat & z, const arma::mat & x, const int & seed, const int & maxiter) {
     ////
     //
     minmax = arma::zeros(2, d);
     find_minmax(minmax, x);
 
+    //
+    standardise_data(z, x);
+
     ////
     //
-    if (rngstart) {
-        centres = create_random_centres(x, k, d, seed);
+    if (rng_start) {
+        centres = create_random_centres(z, k, d, seed);
     }
     else {
-        centres = create_plusplus_centres(x, k, d, competitive, seed);
+        centres = create_plusplus_centres(z, k, d, competitive, seed);
     }
-
 }
 
 //// Update
 // Learning-range
-double GreedyCluster::update_lrange(const int & n) {
+double GreedyCluster::update_lrange(const int & n, const int & s) {
     double lrng = lrange[1];
     if (n < lrange[2]) {
         lrng = lrange[0] + (lrange[1] - lrange[0]) * n / lrange[2];
     }
 
-    return lrng;
+    return lrng / s;
 }
 
-//// Clusters
-// Batch
-void GreedyCluster::update_centres_batch(arma::mat & _kernel_val_sum, arma::vec & _kernel_sum, const arma::vec & v, const int & idx, const int & n) {
+// Centres
+void GreedyCluster::update_centres(arma::mat & _kernel_val_sum, arma::vec & _kernel_sum, const arma::vec & v, const int & idx, const int & n) {
     //
     const std::vector<int> & neighbourhood_idx = neighbourhood[idx];
     const int s = neighbourhood_idx.size();
 
     //
-    const std::vector<double> & kernel_idx = kernel[idx];
-    const double & lrng = update_lrange(n);
+    const double & lrng = update_lrange(n, s);
 
     //
     for (int j = 0; j < d; j++) {
@@ -155,7 +180,7 @@ void GreedyCluster::update_centres_batch(arma::mat & _kernel_val_sum, arma::vec 
         if (competitive & (n < competitive_release)) {
             for (int i = 0; i < s; i++) {
                 //
-                const double kernel_i = std::exp(-(kernel_idx[i] * kernel_idx[i]) / (2.0 * lrng));
+                const double kernel_i = std::exp(-1.0 / lrng);
                 const double kernel_val_ij = kernel_i * v[j];
 
                 //
@@ -169,13 +194,10 @@ void GreedyCluster::update_centres_batch(arma::mat & _kernel_val_sum, arma::vec 
     }
 }
 
-void GreedyCluster::update_clusters_batch(const arma::mat & x, const double & tolerance, const arma::vec & maxiter, const int & trace) {
+// Clusters
+void GreedyCluster::update_clusters(const arma::mat & z, const double & tolerance, const arma::vec & maxiter, const int & trace) {
     //
-    const int & M = x.n_rows;
-
-    //
-    arma::mat z(M, d);
-    standardise_data(z, x);
+    const int & M = z.n_rows;
 
     //
     previous = std::vector<int>(M);
@@ -183,10 +205,11 @@ void GreedyCluster::update_clusters_batch(const arma::mat & x, const double & to
 
     //
     int n = 0;
+    int b = -1;
     int n_delta_centres = 0;
 
     //
-    bool not_stopping = n < maxiter[0];
+    bool not_stopping = true;
     while (not_stopping) {
         //
         arma::mat kernel_val_sum = arma::zeros(k, d);
@@ -198,15 +221,16 @@ void GreedyCluster::update_clusters_batch(const arma::mat & x, const double & to
             //
             int idx_n;
             double d_idx_n;
-            if (greedy & (n > 0) & ((n % greedy_reset) != 0)) {
-                greedymatch(idx_n, d_idx_n, previous[m], v, centres, neighbourhood, d, k);
+            if ((n % greedy) == 0) {
+                bestmatch(idx_n, d_idx_n, v, centres, d, k);
+                b++;
             }
             else {
-                bestmatch(idx_n, d_idx_n, v, centres, d, k);
+                greedymatch(idx_n, d_idx_n, previous[m], v, centres, neighbourhood, d, k);
             }
 
             previous[m] = idx_n;
-            update_centres_batch(kernel_val_sum, kernel_sum, v, idx_n, n);
+            update_centres(kernel_val_sum, kernel_sum, v, idx_n, b);
         }
 
         //
@@ -276,10 +300,9 @@ void GreedyCluster::update_clusters_batch(const arma::mat & x, const double & to
 Rcpp::List greedy_cluster_cpp(
         const arma::mat & x,
         const int & k,
-        const int & nd,
-        const bool & rngstart,
-        const bool & greedy,
-        const int & greedy_reset,
+        const std::vector<std::vector<int>> & neighbourhood,
+        const bool & rng_start,
+        const int & greedy,
         const bool & greedy_end,
         const bool & competitive,
         const int & competitive_release,
@@ -291,27 +314,30 @@ Rcpp::List greedy_cluster_cpp(
 ) {
     //
     const int & d = x.n_cols;
+    const int & n = x.n_rows;
 
     //
-    GreedyCluster GRCL(d, k, nd, rngstart, greedy, greedy_reset, greedy_end, competitive, competitive_release, lrange);
-
-    GRCL.initialise_clusters(x, seed);
-    GRCL.initialise_neighbourhood();
+    GreedyCluster GRCL(d, k, neighbourhood, rng_start, greedy, greedy_end, competitive, competitive_release, lrange);
 
     //
-    GRCL.update_clusters_batch(x, tol, maxiter, trace);
+    arma::mat z(n, d);
+    GRCL.initialise_clusters(z, x, seed, maxiter[0]);
 
     //
-    arma::mat ucentres = GRCL.unstandardise_centres();
+    GRCL.update_clusters(z, tol, maxiter, trace);
+
+    //
+    arma::mat ucentres = GRCL.centres;
+    GRCL.unstandardise_centres(ucentres);
 
     //
     return Rcpp::List::create(
         Rcpp::Named("k") = GRCL.k,
         Rcpp::Named("centres") = ucentres,
         Rcpp::Named("neighbourhood") = GRCL.neighbourhood,
-        Rcpp::Named("kernel") = GRCL.kernel,
         Rcpp::Named("previous") = GRCL.previous,
         Rcpp::Named("iterations") = GRCL.iterations,
+        Rcpp::Named("greedy") = GRCL.greedy,
         Rcpp::Named("minmax") = GRCL.minmax
     );
 }
