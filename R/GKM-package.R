@@ -3,10 +3,6 @@
 
 #' @title Greedy K-means Clustering
 #'
-#' @description Implements greedy re-allocation for K-means clustering.
-#'
-#' @author Søren B. Vilsen <svilsen@mp.aau.dk>
-#'
 #' @importFrom Rcpp evalCpp
 #'
 #' @useDynLib GKM

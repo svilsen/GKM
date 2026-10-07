@@ -6,9 +6,7 @@
 \alias{GKM-package}
 \title{GKM: Greedy K-means Clustering}
 \description{
-Implements greedy re-allocation for K-means clustering.
-
-Implements greedy re-allocation for K-means clustering.
+Implements greedy re-assignment for K-means clustering.
 }
 \author{
 \strong{Maintainer}: Søren B. Vilsen \email{svilsen@mp.aau.dk}
@@ -18,7 +16,5 @@ Authors:
   \item Søren B. Vilsen \email{svilsen@mp.aau.dk}
 }
 
-
-Søren B. Vilsen <svilsen@mp.aau.dk>
 }
 \keyword{internal}

@@ -1,7 +1,7 @@
 Package: GKM
 Type: Package
 Title: Greedy K-means Clustering
-Description: Implements greedy re-allocation for K-means clustering.
+Description: Implements greedy re-assignment for K-means clustering.
 Version: 0.1
 Date: 2026-06-24
 Authors@R: person(given = c("Søren", "B."), family = "Vilsen", role = c("aut", "cre"), email = "svilsen@mp.aau.dk") 
