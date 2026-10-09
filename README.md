@@ -30,7 +30,7 @@ Here’s a simple example of how to use the greedy K-means clustering:
 
 ```r
 # Load package
-library(GKM)
+library("GKM")
 
 # Data
 x <- iris[, -5] |> as.matrix()

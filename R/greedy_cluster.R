@@ -365,7 +365,7 @@ predict.cluster <- function(object, ...) {
         }
 
         if (dim(xnew)[2] != dim(object$centres)[2]) {
-            stop("The matrix supplied in 'newdata' does not have the same number of columns as the original data.")
+            stop("'newdata' does not have the same number of columns as the original data.")
         }
     }
 
