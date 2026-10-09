@@ -1,19 +1,17 @@
 ##
-#' @title Control arguments for the \link{greedy_cluster} function
+#' @title Control arguments for the \link{greedy_cluster}-function
 #'
-#' @description Creates a list of default control arguments used by the \link{greedysom} function.
+#' @description Creates a list of default control arguments used by the \link{greedy_cluster}-function.
 #'
 #' @param neighbours Integer: The number of neighbours of each cluster.
 #' @param neighbours_type String: The type of adjacency matrix constructed from \code{neighbours}.
 #' @param neighbours_connected Boolean: Should the neighbourhood graph be connected?
 #' @param rng_start Boolean: Should the clusters be initialised entirely at random, or using kmeans++?
-#' @param greedy Integer: The number of iterations using best-match allocation before switching to greedy allocation.
-#' @param greedy_end Boolean: Should the final allocation be greedy?
+#' @param greedy Integer: The number of iterations between best-match assignments.
+#' @param greedy_end Boolean: Should the final assignment be greedy?
 #' @param competitive Boolean: Should the clusters be allowed to compete during the training process?
-#' @param competitive_release Integer: The number of iterations before competitive learning is stopped (only used if \code{competitive == TRUE}).
-#' @param batch Boolean: Should the batch version of the algorithm be used?
+#' @param competitive_release Integer: The number of iterations before competitive learning is stopped (only used if \code{competitive = TRUE}).
 #' @param max_iteration Numeric vector: A tuple (the maximum number of iterations, the maximum number of iterations below the tolerance).
-#' @param learning_rate Numeric vector: A triple (start learning rate, end learning rate, number iterations to go from start to end rate).
 #' @param learning_range Numeric vector: A triple (start learning range, end learning range, number iterations to go from start to end range).
 #' @param tolerance Numeric: A tolerance on the absolute change in centres between iterations; used for early stopping.
 #' @param seed Numeric: A seed passed to c++.
@@ -22,6 +20,7 @@
 #'
 #' @details The argument \code{competitive_release} is technically not necessary as it can be controlled by setting an extremely small learning range. However, when the learning range is low (to the point where the optimisation is not competitive) the performance computational complexity of the algorithm can be improved by not accounting for neighbours.
 #'
+#' @family greedy cluster
 #' @return A list of control arguments.
 #' @export
 control_greedy_cluster <- function(
@@ -164,16 +163,55 @@ control_greedy_cluster <- function(
 ##
 #' @title Greedy K-means Clustering
 #'
-#' @description Regularised K-means clustering, allowing for greedy re-allocation of data-points when updating clusters, by exploiting the pre-defined neighbourhood structure.
+#' @description Regularised K-means clustering, allowing for greedy re-assignment of data-points when updating clusters, by exploiting the pre-defined neighbourhood structure.
 #'
 #' @param x Numeric matrix: A matrix with rows and columns corresponding to observations and features, respectively. NB: if \code{x} is not a matrix, the function will try to cast it as a matrix.
 #' @param k Integer, integer vector, or adjacency list: The number of clusters, the grid layout, or the adjacency matrix of the clusters, respectively.
 #' @param control List: A list of control arguments, for more details see \link{control_greedy_cluster}.
 #'
 #' @details
-#' If the argument \code{k} is given as an adjacency list, then the elements will be taken as the number of clusters and the argument \code{neighbours}, set in the control-object, will be ignored.
+#' If the argument \code{k} is given as an adjacency list, then the number of clusters will be set as the size of the list. Furthermore, the argument \code{neighbours}, set in \link{control_greedy_cluster}, will be ignored.
 #'
+#' @family greedy cluster
 #' @return An object of class \link{cluster}.
+#'
+#' @examples
+#' # Data
+#' x <- iris[, -5]
+#' cl <- iris[, 5] |> as.numeric()
+#'
+#' # Greedy clustering using regular graph
+#' grd_reg <- greedy_cluster(
+#'  x,
+#'  k = 3,
+#'  control = list(
+#'     rng_start = TRUE,
+#'     greedy = 2L,
+#'     neighbours = 1L,
+#'     neighbours_type = "regular",
+#'     seed = 123456
+#'  )
+#' )
+#'
+#' plot(x[, 3:4], col = cl + 1, pch = 16)
+#' points(grd_reg$centres[, 3:4], col = "black", pch = 16, cex = 2)
+#'
+#' # Greedy clustering using regular graph
+#' grd_grid <- greedy_cluster(
+#'  x,
+#'  k = 3,
+#'  control = list(
+#'     rng_start = TRUE,
+#'     greedy = 2L,
+#'     neighbours = 1L,
+#'     neighbours_type = "grid",
+#'     seed = 123456
+#'  )
+#' )
+#'
+#' plot(x[, 3], x[, 4], col = cl + 1, pch = 16)
+#' points(grd_grid$centres[, 3:4], col = "black", pch = 16, cex = 2)
+#'
 #' @export
 greedy_cluster <- function(x, k, control = list()) {
     ##
@@ -263,20 +301,50 @@ greedy_cluster <- function(x, k, control = list()) {
     return(res)
 }
 
-
+##
 #' @title Cluster predictions
 #'
-#' @description The allocations predicted by the \link{cluster} object.
+#' @description Assignments of a \link{cluster}-object, created by using the \link{greedy_cluster}-function.
 #'
 #' @param object An object of class \link{cluster}.
 #' @param ... Additional arguments.
 #'
-#' @details A
+#' @details The accepted additional arguments are limited to \code{newdata} and \code{reassign}:
+#' \describe{
+#'      \item{\code{"newdata"}}{Numeric matrix: A matrix with columns corresponding to the original data-set. If not supplied the method will attempt to use the data included in the \link{cluster} object, i.e., it assumes that the argument '\code{include_data = TRUE}' was set in \link{control_greedy_cluster}.}
+#'      \item{\code{"reassign"}}{Boolean: Should the data-points should be reassigned? This argument is needed when given new data or '\code{greedy_end = FALSE}' in \link{control_greedy_cluster}. If the argument is not used, it only reassigns when a new data-set is supplied.}
+#' }
 #'
-#' @return A matrix of allocated clusters.
+#' @family greedy cluster
+#' @return A matrix of assigned clusters.
+#'
+#' @examples
+#' # Data
+#' x <- iris[, -5]
+#' cl <- iris[, 5] |> as.numeric()
+#'
+#' # Greedy clustering using regular graph
+#' grd_clst <- greedy_cluster(
+#'  x,
+#'  k = 3,
+#'  control = list(
+#'     rng_start = TRUE,
+#'     greedy = 2L,
+#'     neighbours = 1L,
+#'     neighbours_type = "regular",
+#'     seed = 123456
+#'  )
+#' )
+#'
+#' pred_clst <- predict(grd_clst, newdata = x)
+#' pred_mrk <- ifelse(pred_clst == 1, 16, ifelse(pred_clst == 2, 4, 17))
+#'
+#' plot(x[, 3:4], col = cl + 1, pch = pred_mrk)
+#' points(grd_clst$centres[, 3:4], col = "black", pch = 16, cex = 2)
 #'
 #' @rdname predict
 #' @method predict cluster
+#'
 #' @export
 predict.cluster <- function(object, ...) {
     ##
@@ -285,27 +353,37 @@ predict.cluster <- function(object, ...) {
 
     #
     if (is.null(dots[["newdata"]])) {
-        xnew <- object$data
+        xnew <- object[["data"]]
+        if (is.null(xnew)) {
+            stop("Data not found; re-run clustering setting 'include_data = TRUE' in the control-object.")
+        }
     }
     else {
         xnew <- dots[["newdata"]]
+        if (!is.matrix(xnew)) {
+            xnew <- as.matrix(xnew)
+        }
+
+        if (dim(xnew)[2] != dim(object$centres)[2]) {
+            stop("The matrix supplied in 'newdata' does not have the same number of columns as the original data.")
+        }
     }
 
     #
-    if (is.null(dots[["reasign"]])) {
+    if (is.null(dots[["reassign"]])) {
         if (is.null(dots[["newdata"]])) {
-            reasign <- FALSE
+            reassign <- FALSE
         }
         else {
-            reasign <- TRUE
+            reassign <- TRUE
         }
     }
     else {
-        reasign <- dots[["reasign"]]
+        reassign <- dots[["reassign"]]
     }
 
-    if (!is.logical(reasign)) {
-        reasign <- as.logical(reasign)
+    if (!is.logical(reassign)) {
+        reassign <- as.logical(reassign)
     }
 
     ##

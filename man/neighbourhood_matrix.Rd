@@ -7,7 +7,7 @@
 neighbourhood_matrix(adj_list)
 }
 \arguments{
-\item{adj_list}{A list containing the neighbours for each cluster.}
+\item{adj_list}{A list containing the neighbours of each cluster.}
 }
 \value{
 A neighbourhood matrix.

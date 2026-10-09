@@ -21,7 +21,6 @@ For detailed documentation, check out the package vignettes and help files after
 
 ```r
 # View help for the main function
-?GKM
 ?greedy_cluster
 ```
 
@@ -30,33 +29,31 @@ For detailed documentation, check out the package vignettes and help files after
 Here’s a simple example of how to use the greedy K-means clustering:
 
 ```r
-# Load the GKM package
+# Load package
 library(GKM)
 
-# Generate sample data
-x <- iris[, 3:4] |> as.matrix()
-cl <- iris[, 5]
-k <- length(unigue(cl))
+# Data
+x <- iris[, -5] |> as.matrix()
 
-# Run standard K-means clustering
+# Standard K-means clustering
 km_clst <- greedy_cluster(
     x, 
     k = 3, 
     control = list(
-        rng_start = FALSE, 
+        rng_start = TRUE, 
         greedy = 1L, 
         competitive = FALSE,
         seed = 123456
     )
 )
 
-# Run greedy K-means clustering
+# Greedy K-means clustering
 grd_clst <- greedy_cluster(
     x, 
     k = 3, 
     control = list(
         neighbours = 1L, 
-        rng_start = FALSE, 
+        rng_start = TRUE, 
         greedy = 2L, 
         seed = 123456
     )

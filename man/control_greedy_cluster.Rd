@@ -2,7 +2,7 @@
 % Please edit documentation in R/greedy_cluster.R
 \name{control_greedy_cluster}
 \alias{control_greedy_cluster}
-\title{Control arguments for the \link{greedy_cluster} function}
+\title{Control arguments for the \link{greedy_cluster}-function}
 \usage{
 control_greedy_cluster(
   neighbours = 2L,
@@ -30,13 +30,13 @@ control_greedy_cluster(
 
 \item{rng_start}{Boolean: Should the clusters be initialised entirely at random, or using kmeans++?}
 
-\item{greedy}{Integer: The number of iterations using best-match allocation before switching to greedy allocation.}
+\item{greedy}{Integer: The number of iterations between best-match assignments.}
 
-\item{greedy_end}{Boolean: Should the final allocation be greedy?}
+\item{greedy_end}{Boolean: Should the final assignment be greedy?}
 
 \item{competitive}{Boolean: Should the clusters be allowed to compete during the training process?}
 
-\item{competitive_release}{Integer: The number of iterations before competitive learning is stopped (only used if \code{competitive == TRUE}).}
+\item{competitive_release}{Integer: The number of iterations before competitive learning is stopped (only used if \code{competitive = TRUE}).}
 
 \item{max_iteration}{Numeric vector: A tuple (the maximum number of iterations, the maximum number of iterations below the tolerance).}
 
@@ -49,17 +49,19 @@ control_greedy_cluster(
 \item{include_data}{Boolean: Should the data be included in the return object?}
 
 \item{trace}{Integer: Prints tracing information on the progress of the algorithm every \code{trace} number of iterations.}
-
-\item{batch}{Boolean: Should the batch version of the algorithm be used?}
-
-\item{learning_rate}{Numeric vector: A triple (start learning rate, end learning rate, number iterations to go from start to end rate).}
 }
 \value{
 A list of control arguments.
 }
 \description{
-Creates a list of default control arguments used by the \link{greedysom} function.
+Creates a list of default control arguments used by the \link{greedy_cluster}-function.
 }
 \details{
 The argument \code{competitive_release} is technically not necessary as it can be controlled by setting an extremely small learning range. However, when the learning range is low (to the point where the optimisation is not competitive) the performance computational complexity of the algorithm can be improved by not accounting for neighbours.
 }
+\seealso{
+Other greedy cluster:
+\code{\link[=greedy_cluster]{greedy_cluster()}},
+\code{\link[=predict.cluster]{predict.cluster()}}
+}
+\concept{greedy cluster}

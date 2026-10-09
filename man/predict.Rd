@@ -12,11 +12,46 @@
 \item{...}{Additional arguments.}
 }
 \value{
-A matrix of allocated clusters.
+A matrix of assigned clusters.
 }
 \description{
-The allocations predicted by the \link{cluster} object.
+Assignments of a \link{cluster}-object, created by using the \link{greedy_cluster}-function.
 }
 \details{
-A
+The accepted additional arguments are limited to \code{newdata} and \code{reassign}:
+\describe{
+     \item{\code{"newdata"}}{Numeric matrix: A matrix with columns corresponding to the original data-set. If not supplied the method will attempt to use the data included in the \link{cluster} object, i.e., it assumes that the argument '\code{include_data = TRUE}' was set in \link{control_greedy_cluster}.}
+     \item{\code{"reassign"}}{Boolean: Should the data-points should be reassigned? This argument is needed when given new data or '\code{greedy_end = FALSE}' in \link{control_greedy_cluster}. If the argument is not used, it only reassigns when a new data-set is supplied.}
 }
+}
+\examples{
+# Data
+x <- iris[, -5]
+cl <- iris[, 5] |> as.numeric()
+
+# Greedy clustering using regular graph
+grd_clst <- greedy_cluster(
+ x,
+ k = 3,
+ control = list(
+    rng_start = TRUE,
+    greedy = 2L,
+    neighbours = 1L,
+    neighbours_type = "regular",
+    seed = 123456
+ )
+)
+
+pred_clst <- predict(grd_clst, newdata = x)
+pred_mrk <- ifelse(pred_clst == 1, 16, ifelse(pred_clst == 2, 4, 17))
+
+plot(x[, 3:4], col = cl + 1, pch = pred_mrk)
+points(grd_clst$centres[, 3:4], col = "black", pch = 16, cex = 2)
+
+}
+\seealso{
+Other greedy cluster:
+\code{\link[=control_greedy_cluster]{control_greedy_cluster()}},
+\code{\link[=greedy_cluster]{greedy_cluster()}}
+}
+\concept{greedy cluster}

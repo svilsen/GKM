@@ -11,5 +11,7 @@ Imports:
 LinkingTo: 
     Rcpp, 
     RcppArmadillo
+Depends: 
+    R (>= 4.1.0)
 Encoding: UTF-8
 Config/roxygen2/version: 8.1.0

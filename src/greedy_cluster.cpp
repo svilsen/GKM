@@ -350,22 +350,31 @@ std::vector<int> predict_cluster_cpp(
     const int & k
 ) {
     //
-    const int M = x.n_rows;
-    const int d = x.n_cols;
+    const int d = centres.n_cols;
 
     //
+    const int & K = centres.n_rows;
+    arma::mat scentres = centres;
+    for (int k = 0; k < K; k++) {
+        for (int j = 0; j < d; j++) {
+            scentres(k, j) = (scentres(k, j) - minmax(0, j)) / (minmax(1, j) - minmax(0, j));
+        }
+    }
+
+    //
+    const int & M = x.n_rows;
     std::vector<int> pred(M);
     for (int m = 0; m < M; m++) {
         //
         arma::vec v_m = x.row(m).as_col();
         for (int j = 0; j < d; j++) {
-            v_m[j] = (x[j] - minmax(0, j)) / (minmax(1, j) - minmax(0, j));
+            v_m[j] = (v_m[j] - minmax(0, j)) / (minmax(1, j) - minmax(0, j));
         }
 
         //
         int idx_m;
         double d_idx_m;
-        bestmatch(idx_m, d_idx_m, v_m, centres, k, d);
+        bestmatch(idx_m, d_idx_m, v_m, scentres, d, k);
 
         //
         pred[m] = idx_m;

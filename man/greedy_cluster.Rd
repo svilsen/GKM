@@ -17,8 +17,52 @@ greedy_cluster(x, k, control = list())
 An object of class \link{cluster}.
 }
 \description{
-Regularised K-means clustering, allowing for greedy re-allocation of data-points when updating clusters, by exploiting the pre-defined neighbourhood structure.
+Regularised K-means clustering, allowing for greedy re-assignment of data-points when updating clusters, by exploiting the pre-defined neighbourhood structure.
 }
 \details{
-If the argument \code{k} is given as an adjacency list, then the elements will be taken as the number of clusters and the argument \code{neighbours}, set in the control-object, will be ignored.
+If the argument \code{k} is given as an adjacency list, then the number of clusters will be set as the size of the list. Furthermore, the argument \code{neighbours}, set in \link{control_greedy_cluster}, will be ignored.
 }
+\examples{
+# Data
+x <- iris[, -5]
+cl <- iris[, 5] |> as.numeric()
+
+# Greedy clustering using regular graph
+grd_reg <- greedy_cluster(
+ x,
+ k = 3,
+ control = list(
+    rng_start = TRUE,
+    greedy = 2L,
+    neighbours = 1L,
+    neighbours_type = "regular",
+    seed = 123456
+ )
+)
+
+plot(x[, 3:4], col = cl + 1, pch = 16)
+points(grd_reg$centres[, 3:4], col = "black", pch = 16, cex = 2)
+
+# Greedy clustering using regular graph
+grd_grid <- greedy_cluster(
+ x,
+ k = 3,
+ control = list(
+    rng_start = TRUE,
+    greedy = 2L,
+    neighbours = 1L,
+    neighbours_type = "grid",
+    seed = 123456
+ )
+)
+
+plot(x[, 3], x[, 4], col = cl + 1, pch = 16)
+points(grd_grid$centres[, 3:4], col = "black", pch = 16, cex = 2)
+
+}
+\seealso{
+Other greedy cluster:
+\code{\link[=control_greedy_cluster]{control_greedy_cluster()}},
+\code{\link[=predict.cluster]{predict.cluster()}}
+}
+\concept{greedy cluster}

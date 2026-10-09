@@ -25,7 +25,7 @@ create_adjacency_list <- function(k, neighbours, type) {
         adj_list <- create_adjacency_list_regular(k, neighbours)
     }
     else if (type == "grid") {
-        adj_list <- GKM:::create_adjacency_list_grid(k)
+        adj_list <- create_adjacency_list_grid(k)
     }
     else if (type == "hexgrid") {
         stop("Currenly the only \"type\"'s implemented are \"regular\" and \"grid\".")
@@ -53,7 +53,7 @@ is_connected_matrix <- function(neighbours, tolerance = 1e-8) {
         connected <- e[m - 1] > tolerance
     }
     else {
-        connected <- is_connected_matrix_directed(adj_matrix)
+        connected <- is_connected_matrix_directed(neighbours)
     }
 
     #
@@ -65,7 +65,7 @@ is_connected_matrix <- function(neighbours, tolerance = 1e-8) {
 #'
 #' @description Create a neighbourhood matrix from an adjacency list.
 #'
-#' @param adj_list A list containing the neighbours for each cluster.
+#' @param adj_list A list containing the neighbours of each cluster.
 #'
 #' @return A neighbourhood matrix.
 #' @export
